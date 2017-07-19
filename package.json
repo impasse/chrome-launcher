@@ -23,7 +23,7 @@
     "@types/core-js": "^0.9.41",
     "@types/mkdirp": "^0.3.29",
     "@types/node": "6.0.66",
-    "lighthouse-logger": "^1.0.0",
+    "lighthouse-logger": "github:lingmm/lighthouse-logger",
     "mkdirp": "0.5.1",
     "rimraf": "^2.6.1"
   },
