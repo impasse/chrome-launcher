@@ -67,6 +67,7 @@ export class Launcher {
   private tmpDirandPidFileReady = false;
   private pollInterval: number = 500;
   private pidFile: string;
+  private portFile: string;
   private startingUrl: string;
   private outFile?: number;
   private errFile?: number;
@@ -105,6 +106,7 @@ export class Launcher {
 
     if (process.platform === 'linux') {
       flags.push('--disable-setuid-sandbox');
+      flags.push('--no-sandbox');
     }
 
     flags.push(...this.chromeFlags);
@@ -131,6 +133,7 @@ export class Launcher {
     // fix for Node4
     // you can't pass a fd to fs.writeFileSync
     this.pidFile = `${this.userDataDir}/chrome.pid`;
+    this.portFile = `${this.userDataDir}/chrome.port`;
 
     log.verbose('ChromeLauncher', `created ${this.userDataDir}`);
 
@@ -169,6 +172,15 @@ export class Launcher {
   }
 
   private async spawnProcess(execPath: string) {
+    try {
+      const pid = fs.readFileSync(this.pidFile, { encoding: 'utf-8' });
+      const port = fs.readFileSync(this.portFile, { encoding: 'utf-8' });
+      this.pid = Number(pid);
+      this.port = Number(port);
+      return this.pid;
+    } catch (e) {
+      // Stub.
+    }
     // Typescript is losing track of the return type without the explict typing.
     const spawnPromise: Promise<number> = new Promise(async (resolve) => {
       if (this.chrome) {
@@ -191,6 +203,7 @@ export class Launcher {
           execPath, this.flags, {detached: true, stdio: ['ignore', this.outFile, this.errFile]});
       this.chrome = chrome;
 
+      this.fs.writeFileSync(this.portFile, this.port);
       this.fs.writeFileSync(this.pidFile, chrome.pid.toString());
 
       log.verbose('ChromeLauncher', `Chrome running with pid ${chrome.pid} on port ${this.port}.`);
@@ -255,6 +268,8 @@ export class Launcher {
                 log.error(
                     'ChromeLauncher', `Logging contents of ${this.userDataDir}/chrome-err.log`);
                 log.error('ChromeLauncher', stderr);
+                fs.unlinkSync(this.pidFile);
+                fs.unlinkSync(this.portFile);
                 return reject(err);
               }
               delay(launcher.pollInterval).then(poll);
@@ -279,6 +294,8 @@ export class Launcher {
           } else {
             process.kill(-this.chrome.pid);
           }
+          fs.unlinkSync(this.pidFile);
+          fs.unlinkSync(this.portFile);
         } catch (err) {
           log.warn('ChromeLauncher', `Chrome could not be killed ${err.message}`);
         }
