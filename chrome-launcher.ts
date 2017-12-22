@@ -18,7 +18,7 @@ const spawn = childProcess.spawn;
 const execSync = childProcess.execSync;
 const isWindows = process.platform === 'win32';
 const _SIGINT = 'SIGINT';
-const _SIGINT_EXIT_CODE = 130;
+const _SIGABRT = 'SIGABRT';
 const _SUPPORTED_PLATFORMS = new Set(['darwin', 'linux', 'win32']);
 
 type SupportedPlatforms = 'darwin'|'linux'|'win32';
@@ -52,10 +52,11 @@ export async function launch(opts: Options = {}): Promise<LaunchedChrome> {
 
   // Kill spawned Chrome process in case of ctrl-C.
   if (opts.handleSIGINT) {
-    process.on(_SIGINT, async () => {
+    const kill = async () => {
       await instance.kill();
-      process.exit(_SIGINT_EXIT_CODE);
-    });
+    };
+    process.on(_SIGINT, kill);
+    process.on(_SIGABRT, kill);
   }
 
   await instance.launch();
