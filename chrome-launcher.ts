@@ -31,6 +31,7 @@ export interface Options {
   chromePath?: string;
   userDataDir?: string;
   logLevel?: string;
+  killSignal?: string;
 }
 
 export interface LaunchedChrome {
@@ -78,6 +79,7 @@ export class Launcher {
   private fs: typeof fs;
   private rimraf: typeof rimraf;
   private spawn: typeof childProcess.spawn;
+  private killSignal: string;
 
   userDataDir?: string;
   port?: number;
@@ -95,6 +97,7 @@ export class Launcher {
     this.chromeFlags = defaults(this.opts.chromeFlags, []);
     this.requestedPort = defaults(this.opts.port, 0);
     this.chromePath = this.opts.chromePath;
+    this.killSignal = defaults(this.opts.killSignal, 'SIGKILL');
   }
 
   private get flags() {
@@ -278,7 +281,7 @@ export class Launcher {
           if (isWindows) {
             execSync(`taskkill /pid ${this.chrome.pid} /T /F`);
           } else {
-            process.kill(-this.chrome.pid);
+            process.kill(-this.chrome.pid, this.killSignal);
           }
         } catch (err) {
           log.warn('ChromeLauncher', `Chrome could not be killed ${err.message}`);
