@@ -297,11 +297,6 @@ export class Launcher {
 
   destroyTmp() {
     return new Promise(resolve => {
-      // Only clean up the tmp dir if we created it.
-      if (this.userDataDir === undefined || this.opts.userDataDir !== undefined) {
-        return resolve();
-      }
-
       if (this.outFile) {
         this.fs.closeSync(this.outFile);
         delete this.outFile;
@@ -310,6 +305,11 @@ export class Launcher {
       if (this.errFile) {
         this.fs.closeSync(this.errFile);
         delete this.errFile;
+      }
+
+      // 只有在 userData 由 Chrome-launcher 创建时删除文件夹
+      if (this.userDataDir === undefined || this.opts.userDataDir !== undefined) {
+        return resolve();
       }
 
       this.rimraf(this.userDataDir, () => resolve());
